@@ -44,7 +44,7 @@ CoordMapType.prototype.getTile = function(coord, zoom, ownerDocument) {
 */
 CoordMapType.prototype.releaseTile = function (tile) {
   // terminate the worker, even if it's not finished yet (e.g. while zooming in fast)
-  //this.worker.terminate();
+  this.worker.terminate();
 }
 
 var map;
