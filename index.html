@@ -2,158 +2,27 @@
 <html>
   <head>
     <title>Basic map types</title>
-    <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-    }
-
-    #map-canvas, #map_canvas {
-      height: 100%;
-    }
-
-    @media print {
-      html, body {
-        height: auto;
-      }
-
-      #map-canvas, #map_canvas {
-        height: 650px;
-      }
-    }
-
-    #panel {
-      position: absolute;
-      top: 5px;
-      left: 50%;
-      margin-left: -180px;
-      z-index: 5;
-      background-color: #fff;
-      padding: 5px;
-      border: 1px solid #999;
-    }
-    </style>
-    <script src='https://cdn.firebase.com/v0/firebase.js'></script>
+    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="stylesheet.css">
     <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
-    <script>
-/*
-http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.88.7296&rep=rep1&type=pdf
-Thomas Wang’s 32 bit Mix Function
-*/
-function hash(key) {
-  key += ~(key << 15);
-  key ^= (key >> 10);
-  key += (key << 3);
-  key ^= (key >> 6);
-  key += ~(key << 11);
-  key ^= (key >> 16);
-  return key;
-}
-
-function customFloor(value, roundTo) {
-  return Math.floor(value * roundTo) / roundTo;
-};
-
-var pixelsPerTile = 128; // size of a tile in pixels
-var seed = hash(2);
-
-function CoordMapType() {
-}
-
-CoordMapType.prototype.tileSize = new google.maps.Size(pixelsPerTile,pixelsPerTile);
-CoordMapType.prototype.minZoom = 0;
-CoordMapType.prototype.maxZoom = 20;
-
-CoordMapType.prototype.getTile = function(coord, zoom, ownerDocument) {
-  //var canvasTest = ownerDocument.createElement('canvas');
-  //var proxy = canvasTest.transferControlToProxy();
-  
-  var canvas = ownerDocument.createElement('canvas');
-  canvas.setAttribute('width', pixelsPerTile);
-  canvas.setAttribute('height', pixelsPerTile);
-  
-  var context = canvas.getContext("2d");
-  var imageData = context.getImageData(0, 0, pixelsPerTile, pixelsPerTile);
-  //console.log('length: ', imageData.data.length);
-      
-  // The coordinates of the tile (left upper corner) in the real world
-  var tileCoordX = coord.x/(Math.pow(2,zoom));
-  var tileCoordY = coord.y/(Math.pow(2,zoom));
-  
-  // Constrain the size of the world
-  //if (tileCoordX < 1 && tileCoordX >= 0 && tileCoordY < 1 && tileCoordY >= 0) {
-  
-    /*spawn new worker
-    var callBackFunction = function (oEvent) {
-      if (oEvent.data.coord.x == coord.x && oEvent.data.coord.y == coord.y) {
-        console.log('ok');
-        imageData.data.set(new Uint8ClampedArray(oEvent.data.buf));
-        context.putImageData(imageData, 0, 0);
-      }
-    };
-    var workerTask = new WorkerTask('renderMap.js',callBackFunction,{zoom: zoom, coord: coord, pixelsPerTile: pixelsPerTile, seed: seed});
-    pool.addWorkerTask(workerTask);*/
-    
-    this.worker = new Worker('renderMap.js');
-    this.worker.onmessage = function (oEvent) {
-      if (oEvent.data.coord.x == coord.x && oEvent.data.coord.y == coord.y) {
-        console.log('ok');
-        imageData.data.set(new Uint8ClampedArray(oEvent.data.buf));
-        context.putImageData(imageData, 0, 0);
-      }
-    };
-    this.worker.postMessage({zoom: zoom, coord: coord, pixelsPerTile: pixelsPerTile, seed: seed});
-  //}
-  
-  console.log('returned');
-  return canvas;
-};
-
-CoordMapType.prototype.releaseTile = function (tile) {
-  //this.worker.terminate();
-  //this.ref.off();
-  console.log('terminated');
-}
-
-CoordMapType.prototype.name = 'Tile #s';
-CoordMapType.prototype.alt = 'Tile Coordinate Map Type';
-
-var map;
-var chicago = new google.maps.LatLng(41.850033,-87.6500523);
-var midpoint = new google.maps.LatLng(0,0);
-var coordinateMapType = new CoordMapType();
-
-function initialize() {
-  var mapOptions = {
-    zoom: 0,
-    //zoomControl: false,
-    mapTypeControl: false,
-    center: chicago,
-    streetViewControl: false,
-    mapTypeId: 'coordinate',
-    mapTypeControlOptions: {
-      mapTypeIds: ['coordinate', google.maps.MapTypeId.ROADMAP],
-      style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
-    }
-  };
-  map = new google.maps.Map(document.getElementById('map-canvas'),
-      mapOptions);
-
-  google.maps.event.addListener(map, 'maptypeid_changed', function() {
-    var showStreetViewControl = map.getMapTypeId() != 'coordinate';
-    map.setOptions({'streetViewControl': showStreetViewControl});
-  });
-
-  // Now attach the coordinate map type to the map's registry
-  map.mapTypes.set('coordinate', coordinateMapType);
-}
-
-google.maps.event.addDomListener(window, 'load', initialize);
-
-    </script>
+    <script src="renderMap.js"></script>
   </head>
   <body>
-    <div id="map-canvas" style="width:400px; height:400px;"></div>
+    <div class="container">
+      <div class="header">
+        <h3 class="text-muted">Second World</h3>
+      </div>
+      <div class="row marketing">
+        <div class="col-lg-7">
+          <div id="map-canvas" style="width:400px; height:400px;"></div>
+        </div>
+        <div class="col-lg-5">
+          <h4>About</h4>
+          <p>Second world is a <a href="http://en.wikipedia.org/wiki/Procedural_generation">procedurally generated</a> world. It is infinitely large but fits right into your browser.</p>
+          <p>Second world is written in JavaScript. <a href="http://freespace.virgin.net/hugo.elias/models/m_perlin.htm">Perlin noise</a> and <a href="http://web.archive.org/web/20071223173210/http://www.concentric.net/~Ttwang/tech/inthash.htm">Thomas Wang's hash function</a> are the main ingredients. <a href="http://en.wikipedia.org/wiki/Web_worker">Web workers</a> speed up the rendering of the map. The <a href="https://developers.google.com/maps/documentation/javascript/?hl=nl">Google Maps API</a> provides an easy way to browse it.</p>
+          <p>Have a look at the source code on <a href="https://github.com/dbbert/secondworld/tree/gh-pages">GitHub</a> or leave a comment on Hacker News.</p>
+        </div>
+      </div>      
+    </div>
   </body>
 </html>
